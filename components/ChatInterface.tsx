@@ -67,7 +67,7 @@ export default function ChatInterface() {
                     temperature: 0.5,
                     topP: 1,
                     runtimeContext: {},
-                    threadId: COLLEGE_ROLL_NUMBER,
+                    threadId: 2024510008,
                     resourceId: "weatherAgent"
                 })
             });
