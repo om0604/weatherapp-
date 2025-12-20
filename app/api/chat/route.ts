@@ -4,36 +4,45 @@ export async function POST(req: Request) {
     console.log("Chat API Route HIT");
     try {
         const body = await req.json();
-        console.log("Request Body:", JSON.stringify(body, null, 2));
+        // Extract the last user message content
+        const messages = body.messages || [];
+        const lastMessage = messages[messages.length - 1];
+        const prompt = lastMessage?.content || "";
 
-        const targetUrl = 'https://brief-thousands-sunset-9fcb1c78-485f-4967-ac04-2759a8fa1462.mastra.cloud/api/agents/weatherAgent/stream';
+        console.log("Prompt:", prompt);
+
+        const targetUrl = 'https://api-dev.provue.ai/api/webapp/agent/test-agent';
         console.log("Forwarding to:", targetUrl);
 
-        // Forward the request to the Mastra agent
+        // Call the new API
         const response = await fetch(targetUrl, {
             method: 'POST',
             headers: {
-                'Accept': '*/*',
-                'Connection': 'keep-alive',
-                'Content-Type': 'application/json',
-                'x-mastra-dev-playground': 'true'
+                'Content-Type': 'application/json'
             },
-            body: JSON.stringify(body)
+            body: JSON.stringify({
+                prompt: prompt,
+                stream: false
+            })
         });
 
-        console.log("Mastra Response Status:", response.status);
+        console.log("Upstream Response Status:", response.status);
 
         if (!response.ok) {
             const errorText = await response.text();
-            console.error("Mastra API Error Body:", errorText);
-            return NextResponse.json({ error: `Mastra API Error: ${response.status} ${response.statusText}`, details: errorText }, { status: response.status });
+            console.error("Upstream API Error:", errorText);
+            return NextResponse.json({ error: `Upstream API Error: ${response.status}`, details: errorText }, { status: response.status });
         }
 
-        // Return the stream directly
-        return new Response(response.body, {
+        const data = await response.json();
+        const responseText = data?.data?.response || "";
+
+        // Return the response text directly. 
+        // The frontend expects a stream, but a single text response is a valid stream of one chunk.
+        return new Response(responseText, {
+            status: 200,
             headers: {
-                'Content-Type': 'text/plain; charset=utf-8',
-                'Transfer-Encoding': 'chunked'
+                'Content-Type': 'text/plain; charset=utf-8'
             }
         });
 
